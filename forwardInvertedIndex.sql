@@ -1,21 +1,19 @@
-create table forwardIndex 
+create table forwardIndex
 (
-docID int, 
-wordID int,
-nHits  tinyint unsigned, 
-hit smallint 
+  docID int,
+  wordID int,
+  nHits  tinyint unsigned,
+  hit smallint unsigned
 );
 
-create table invertedIndex 
+create table invertedIndex
 (
-wordID int,
-nDocs int,
-docID int,
-nHits tinyint unsigned,
-hit smallint
-
-
+  wordID int,
+  nDocs int,
+  docID int,
+  nHits tinyint unsigned,
+  hit smallint unsigned
 );
- 
- 
- 
+
+
+
