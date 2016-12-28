@@ -7,18 +7,20 @@ ANCHOR_HASH_MASK = 0b0000011110000000            #6th to 9th
 ANCHOR_POS_MASK = 0b0000000001111111             #10th to 16th
 PLAIN_POS_MASK = 0b0001111111111111              #4th to 16th
 
-def newPlainHit(cap, imp, pos)
-  newHit = 0b0000000000000000
-  newHit = newHit | cap << 15
-  newHit = newHit | imp << 13
-  newHit = newHit | pos                           #check for pos > limit then set it to max
+#cap = Capitalization = 0 or 1
+#imp = Importance = 0 for normal, 1 for bold, 2 for fancy ( title )
+#pos = position < 8192
+def newHit(cap, imp, pos)
+  pos= 8191 if pos > 8191
+  newHit = 0b0000000000000000 | cap << 15 | imp << 13 | pos
 end
 
-
 def extractHit(hit)
-  #For plain hit only right now
   cap = (hit & CAP_MASK) >> 15
   imp = (hit & IMP_MASK) >> 13
   pos = (hit & PLAIN_POS_MASK)
   puts cap.to_s + ' ' + imp.to_s  + ' ' + pos.to_s
 end
+
+
+#extractHit newPlainHi 1,3,8191
