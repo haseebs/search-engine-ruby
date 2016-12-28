@@ -5,10 +5,10 @@ require 'mysql'
 
 # Parameters = host, username, password, database name
 connection = Mysql.new 'localhost', 'test', '12345', 'wikiDatabase'
+sqlStatement= connection.prepare 'INSERT INTO docRefs(docID, title, wordCount) VALUES(?,?,?)'
 
 file = Nokogiri::XML(File.open('simplewiki-20161220-pages-meta-current.xml'))
 
-prepare = connection.prepare 'INSERT INTO docRefs(docID, title, wordCount) VALUES(?,?,?)'
 file.css('page').each do |page|
   text = page.css('text')
 
@@ -22,5 +22,5 @@ file.css('page').each do |page|
   splitTitle = title.to_s.split('/').first
   splitTitle.gsub! /\s+/,'_'
 
-  prepare.execute id, splitTitle, wordCount
+  sqlStatement.execute id, splitTitle, wordCount
 end
