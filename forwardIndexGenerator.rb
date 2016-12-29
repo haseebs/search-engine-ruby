@@ -2,6 +2,28 @@ require './hits'
 require 'mysql'
 require './GenSQL'
 
+def finalize(rows, reservedFiles)
+  #Calculate nhits
+  nhits = Hash.new 0
+  rows.each do |row|
+    nhits[row.docID.to_s + row.wordID.to_s] += 1
+  end
+
+  rows.each do |row|
+    row.nHits = nhits[row.docID.to_s + row.wordID.to_s]
+  end
+
+  #Push to database
+  #This method below works but it is very slow (81 hours) on my computer
+  #sqlStatementInsert = $connection.prepare 'INSERT INTO forwardIndex(docID, wordID, nHits, hit) VALUES(?,?,?,?)'
+  #rows.each do |row|
+  #  sqlStatementInsert.execute(row.docID, row.wordID, row.nHits, row.hit)
+  #end
+  #
+  #So instead we generate our own sql file which then can be executed for quicker insertion
+  GenSQL.generate(rows, reservedFiles)
+end
+
 # Parameters = host, username, password, database name
 $connection = Mysql.new 'localhost', 'test', '12345', 'wikiDatabase'
 
@@ -27,6 +49,10 @@ filenames = Dir.glob(folder+ '**')
 filenames -= reservedFiles
 filenames.each do |filename|
 
+  if fileCounter % 5000 == 0
+    finalize(rows, reservedFiles[0])
+    rows.clear
+  end
   puts "Indexing file: #{fileCounter+=1}/#{totalFiles}"
   #Get text
   text = File.open(filename, 'r').read.to_s
@@ -83,23 +109,6 @@ filenames.each do |filename|
   end
 end
 
+finalize(rows, reservedFiles[0])
 
-#Calculate nhits
-nhits = Hash.new 0
-rows.each do |row|
-  nhits[row.docID.to_s + row.wordID.to_s] += 1
-end
 
-rows.each do |row|
-  row.nHits = nhits[row.docID.to_s + row.wordID.to_s]
-end
-
-#Push to database
-#This method below works but it is very slow (81 hours) on my computer
-#sqlStatementInsert = $connection.prepare 'INSERT INTO forwardIndex(docID, wordID, nHits, hit) VALUES(?,?,?,?)'
-#rows.each do |row|
-#  sqlStatementInsert.execute(row.docID, row.wordID, row.nHits, row.hit)
-#end
-#
-#So instead we generate our own sql file which then can be executed for quicker insertion
-GenSQL.generate(rows, reservedFiles[0])

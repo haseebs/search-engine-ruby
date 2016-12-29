@@ -1,7 +1,7 @@
 module GenSQL
   class << self
     def generate(rows, file)
-      file = File.open(file, 'w')
+      file = File.open(file, 'a')
 
       #Database should already exist at this point
       file.write("USE wikiDatabase;")
