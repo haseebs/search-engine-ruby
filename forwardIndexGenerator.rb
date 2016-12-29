@@ -2,6 +2,11 @@ require './hits'
 require 'mysql'
 require './GenSQL'
 
+#This function takes the processed data and path to the file where it will store
+#generate an sql file which contains data for forward Index.Sql file was generated
+#instead of using the ruby mysql gem because of the massive performance improvement
+#achieved by executing the generated sql file versus using mysql gem (80x faster in our case)
+#This function also calculates the number of hits for each word in each document
 def finalize(rows, reservedFiles)
   #Calculate nhits
   nhits = Hash.new 0
@@ -9,24 +14,28 @@ def finalize(rows, reservedFiles)
     nhits[row.docID.to_s + row.wordID.to_s] += 1
   end
 
+  #
   rows.each do |row|
     row.nHits = nhits[row.docID.to_s + row.wordID.to_s]
   end
 
   #Push to database
-  #This method below works but it is very slow (81 hours) on my computer
+  #This method below works but it is very expensive
   #sqlStatementInsert = $connection.prepare 'INSERT INTO forwardIndex(docID, wordID, nHits, hit) VALUES(?,?,?,?)'
   #rows.each do |row|
   #  sqlStatementInsert.execute(row.docID, row.wordID, row.nHits, row.hit)
   #end
-  #
   #So instead we generate our own sql file which then can be executed for quicker insertion
   GenSQL.generate(rows, reservedFiles)
 end
 
-# Parameters = host, username, password, database name
+#Parameters = host, username, password, database name
 $connection = Mysql.new 'localhost', 'test', '12345', 'wikiDatabase'
 
+#Get words and their corresponding wordIDs from the database and store them in
+#a hash. This operation takes approx 2.5 seconds on our computer. This was done
+#because sending queries repeatedly for each word is a very expensive operation
+#(It would have taken 10-30 weeks instead of 2.5 seconds for this task on entire dataset)
 sqlStatementGetWordID = $connection.query "SELECT * FROM Lexicon"
 wordID = {}
 sqlStatementGetWordID.num_rows.times do
@@ -40,7 +49,7 @@ rows = []
 #Also read from forwardIndex and store in this struct for when extending
 
 folder = File.expand_path("..", Dir.pwd) + '/repository/'
-reservedFiles = [folder+'forwardIndexWithData.sql']
+reservedFiles = [folder+'forwardIndexData.sql']
 
 totalFiles = %x[ls -l #{folder} | egrep -c '^-']
 fileCounter = 0
@@ -49,7 +58,7 @@ filenames = Dir.glob(folder+ '**')
 filenames -= reservedFiles
 filenames.each do |filename|
 
-  if fileCounter % 5000 == 0
+  if fileCounter % 10 == 0
     finalize(rows, reservedFiles[0])
     rows.clear
   end
@@ -110,5 +119,3 @@ filenames.each do |filename|
 end
 
 finalize(rows, reservedFiles[0])
-
-

@@ -1,19 +1,22 @@
 module GenSQL
   class << self
-    def generate(rows, file)
-      file = File.open(file, 'a')
+    def generate(rows, filePath)
+      file = File.open(filePath, 'a+')
+      text = file.read
 
       #Database should already exist at this point
-      file.write("USE wikiDatabase;")
-      file.write("\n")
-      file.write("create table if not exists forwardIndex(docID int, wordID int, nHits  smallint unsigned, hit smallint unsigned);")
-      file.write("\n")
-      file.write("INSERT INTO forwardIndex VALUES(0,0,0,0)")
+      text << "INSERT IGNORE INTO forwardIndex VALUES(0,0,0,0)"
 
+      count = 0
       rows.each do |row|
-        file.write(",(#{row.docID}, #{row.wordID}, #{row.nHits}, #{row.hit})")
+        count += 1
+        text << ",(#{row.docID}, #{row.wordID}, #{row.nHits}, #{row.hit})"
       end
-      file.write(";")
+      text << ";" if count > 0
+      file = File.open(filePath, 'w')
+
+      file.write text
     end
   end
 end
+
