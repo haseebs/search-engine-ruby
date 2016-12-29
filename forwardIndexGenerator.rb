@@ -58,7 +58,7 @@ filenames = Dir.glob(folder+ '**')
 filenames -= reservedFiles
 filenames.each do |filename|
 
-  if fileCounter % 10 == 0
+  if fileCounter % 5000 == 0
     finalize(rows, reservedFiles[0])
     rows.clear
   end

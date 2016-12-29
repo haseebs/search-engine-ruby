@@ -7,3 +7,4 @@ create Table Lexicon(
   word VARCHAR(20)
 );
 
+CREATE INDEX wordIndex ON Lexion(word);
