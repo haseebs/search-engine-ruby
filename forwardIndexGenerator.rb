@@ -5,9 +5,11 @@ require 'mysql'
 $connection = Mysql.new 'localhost', 'test', '12345', 'wikiDatabase'
 sqlStatementInsert = $connection.prepare 'INSERT INTO forwardIndex(docID, wordID, nHits, hit) VALUES(?,?,?,?)'
 
-def getWordID(word)
-  sqlStatementGetWordID = $connection.query "SELECT wordID FROM Lexicon WHERE word = '#{word}'"
-  wordID = sqlStatementGetWordID.fetch_row.to_s.to_i
+sqlStatementGetWordID = $connection.query "SELECT * FROM Lexicon"
+wordID = {}
+sqlStatementGetWordID.num_rows.times do
+  row = sqlStatementGetWordID.fetch_row
+  wordID[row[1].upcase] = row[0]
 end
 
 def getnHits(docID, wordID)
@@ -23,7 +25,7 @@ filenames.each do |filename|
   #Get text
   text = File.open(filename, 'r').read.to_s
   #Get title
-  title = filename.gsub(folder, '').match( /-(.*)-/ )[1].gsub(/_/, ' ')
+  title = filename.gsub(folder, '').match( /-(.*)-/ )[1].gsub(/_/, ' ').split(/[\s,\W]/)
   #Get docID
   docID = filename.gsub(folder, '').match(/(.*?)-/)[1].to_i
 
@@ -34,8 +36,11 @@ filenames.each do |filename|
   end
 
   #Push title as fancy hit
-  wordID = getWordID(title)
-  sqlStatementInsert.execute docID, wordID, getnHits(docID, title), Hits.newHit(0,2,0)
+  title.each do |word|
+    word.upcase!
+    sqlStatementInsert.execute docID, wordID[word], getnHits(docID, wordID[word]), Hits.newHit(0,2,0)
+  end
+
   count = 0
   boldWordsIndex = 0;
   #Get all remaining words
@@ -43,16 +48,18 @@ filenames.each do |filename|
 
     if word == 'PH321'
       if boldWords[boldWordsIndex].class == String
-        wordID = getWordID(boldWords[boldWordsIndex])
-        sqlStatementInsert.execute docID, wordID, getnHits(docID, boldWords[boldWordsIndex]), Hits.newHit(0,1,count+=1)
+        boldWords[boldWordsIndex].upcase!
+        wordIDbold = wordID[boldWords[boldWordsIndex]]
+        sqlStatementInsert.execute docID, wordIDbold, getnHits(docID, wordIDbold), Hits.newHit(0,1,count+=1)
         boldWordsIndex+=1
         next
       end
 
       if boldWords[boldWordsIndex].class == Array
         boldWords[boldWordsIndex].each do |boldWord|
-          wordID = getWordID(boldWords[boldWordsIndex])
-          sqlStatementInsert.execute docID, wordID, getnHits(docID, boldWords[boldWordsIndex]), Hits.newHit(0,1,count+=1)
+          boldWord.upcase!
+          wordIDbold = wordID[boldWord]
+          sqlStatementInsert.execute docID, wordIDbold, getnHits(docID, wordIDbold), Hits.newHit(0,1,count+=1)
         end
         boldWordsIndex+=1
         next
@@ -62,8 +69,9 @@ filenames.each do |filename|
     #Check caps
     caps = 0
     caps = 1 if word == word.upcase && word =~ /[a-zA-Z]/
-    wordID = getWordID(word)
-    sqlStatementInsert.execute docID, wordID, getnHits(docID, wordID), Hits.newHit(caps, 0, count+=1)
+    word.upcase!
+    wordIDrest = wordID[word]
+    sqlStatementInsert.execute docID, wordIDrest, getnHits(docID, wordIDrest), Hits.newHit(caps, 0, count+=1)
   end
 end
 
