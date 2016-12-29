@@ -15,5 +15,5 @@ create table invertedIndex
   hit smallint unsigned
 );
 
-
+CREATE INDEX wordID_index ON invertedIndex(wordID);
 

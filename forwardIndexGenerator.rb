@@ -45,49 +45,70 @@ end
 
 Row = Struct.new(:docID, :wordID, :nHits, :hit)
 rows = []
+#Also we can read from forwardIndex and store in this struct for when extending the dataset
 
-#Also read from forwardIndex and store in this struct for when extending
-
+#Get the parent directory and then direct to repository folder. The data related to search
+#will be stored in this folder
 folder = File.expand_path("..", Dir.pwd) + '/repository/'
-reservedFiles = [folder+'forwardIndexData.sql']
 
+#Delete forwardIndexData.sql and invertedIndexData.sql if they already exist
+%x[rm #{folder}forwardIndexData.sql]
+%x[rm #{folder}invertedIndexData.sql]
+
+#Dont check the files for forward and inverted indexes (in case the above commands fail)
+reservedFiles = [folder+'forwardIndexData.sql', folder+'invertedIndexData.sql']
+
+#Linux/Unix shell command to count the total number of files in a given directory.
+#Used to show progess
 totalFiles = %x[ls -l #{folder} | egrep -c '^-']
 fileCounter = 0
 
+#Get array of filenames in the selected folder
 filenames = Dir.glob(folder+ '**')
 filenames -= reservedFiles
+
+#Iterate over each file
 filenames.each do |filename|
 
+  #Once we have iterated over specified number of files, we write their data to disk and
+  #clear the array to deallocate the memory. This is done to improve speed and reduce 
+  #memory usage. The number can be adjusted.
   if fileCounter % 5000 == 0
     finalize(rows, reservedFiles[0])
     rows.clear
   end
+  #Show progress
   puts "Indexing file: #{fileCounter+=1}/#{totalFiles}"
   #Get text
   text = File.open(filename, 'r').read.to_s
   #Get title
-  title = filename.gsub(folder, '').match( /-(.*)-/ )[1].gsub(/_/, ' ').split(/[\s,\W]/)
+  title = filename.gsub(folder, '').match( /-(.*)-/ )[1].gsub(/_/, ' ').split(/[\s\W]/)
   #Get docID
   docID = filename.gsub(folder, '').match(/(.*?)-/)[1].to_i
 
-  #Get all bold words
+  #Get all bold words and split them wrt non-word characters
   boldWords = []
   text.scan(/'''(.*?)'''/).each_with_index do |word, index|
-    boldWords[index] = word[0].split(/[\s,\W]/)
+    boldWords[index] = word[0].split(/[\s\W]/)
   end
 
   #Push title as fancy hit
   title.each do |word|
     word.upcase!
-    rows.push(Row.new(docID, wordID[word], 0, Hits.newHit(0,2,0))) if wordID != NIL
+    rows.push(Row.new(docID, wordID[word], 0, Hits.newHit(0,2,0))) if wordID[word] != NIL
   end
 
   count = 0
   boldWordsIndex = 0;
-  #Get all remaining words
-  text.gsub(/'''(.*?)'''/, 'PH321').split(/[\s,\W]/).select{|_w| _w =~ /^\w+$/}.each_with_index do |word, index|
+  #Get all remaining words, substitute a string 'PH321' in place of bold words so that they
+  #are not counted twice. We use this string as a placeholder for the position of bold word
+  #The regex below then splits the string on basis of whitespaces and non-word characters and
+  #then from the resulting array, selects those elements which consist of one or more word characters
+  text.gsub(/'''(.*?)'''/, 'PH321').split(/[\s\W]/).select{|word| word =~ /^\w+$/}.each_with_index do |word, index|
 
     if word == 'PH321'
+      #Here we check whether a boldWord is a single word or a combination of words separated by some whitespac
+      #or other type of delimiter. We then assign them their position accordingly
       if boldWords[boldWordsIndex].class == String
         boldWords[boldWordsIndex].upcase!
         wordIDbold = wordID[boldWords[boldWordsIndex]]
@@ -108,7 +129,7 @@ filenames.each do |filename|
       next
     end
 
-    #Check caps
+    #Check for capital and normal words and push them
     caps = 0
     caps = 1 if word == word.upcase && word =~ /[a-zA-Z]/
     word.upcase!
@@ -118,4 +139,5 @@ filenames.each do |filename|
   end
 end
 
+#Write the rest of the data currently in the memory into the file
 finalize(rows, reservedFiles[0])
