@@ -12,13 +12,13 @@ sqlStatementGetWordID.num_rows.times do
   wordID[row[1].upcase] = row[0]
 end
 
-def getnHits(docID, wordID)
-  sqlGetnHits = $connection.query "SELECT count(nHits) FROM forwardIndex WHERE docID = '#{docID}' and wordID = '#{wordID}'"
-  nHits = sqlGetnHits.fetch_row.to_s.to_i + 1
-end
+Row = Struct.new(:docID, :wordID, :nHits, :hit)
+rows = []
 
-folder = File.expand_path("..", Dir.pwd) + '/smallrepo/**'
-filenames = Dir.glob(folder)
+#Also read from forwardIndex and store in this struct for when extending
+
+folder = File.expand_path("..", Dir.pwd) + '/smallrepo/'
+filenames = Dir.glob(folder+ '**')
 
 filenames.each do |filename|
 
@@ -32,13 +32,13 @@ filenames.each do |filename|
   #Get all bold words
   boldWords = []
   text.scan(/'''(.*?)'''/).each_with_index do |word, index|
-    boldWords[index] = word[index][0].split(/[\s,\W]/)
+    boldWords[index] = word[0].split(/[\s,\W]/)
   end
 
   #Push title as fancy hit
   title.each do |word|
     word.upcase!
-    sqlStatementInsert.execute docID, wordID[word], getnHits(docID, wordID[word]), Hits.newHit(0,2,0)
+    rows.push(Row.new(docID, wordID[word], 0, Hits.newHit(0,2,0)))
   end
 
   count = 0
@@ -50,7 +50,7 @@ filenames.each do |filename|
       if boldWords[boldWordsIndex].class == String
         boldWords[boldWordsIndex].upcase!
         wordIDbold = wordID[boldWords[boldWordsIndex]]
-        sqlStatementInsert.execute docID, wordIDbold, getnHits(docID, wordIDbold), Hits.newHit(0,1,count+=1)
+        rows.push(Row.new(docID, wordIDbold, 0, Hits.newHit(0,1,count+=1)))
         boldWordsIndex+=1
         next
       end
@@ -59,11 +59,12 @@ filenames.each do |filename|
         boldWords[boldWordsIndex].each do |boldWord|
           boldWord.upcase!
           wordIDbold = wordID[boldWord]
-          sqlStatementInsert.execute docID, wordIDbold, getnHits(docID, wordIDbold), Hits.newHit(0,1,count+=1)
+          rows.push(Row.new(docID, wordIDbold, 0, Hits.newHit(0,1,count+=1)))
         end
         boldWordsIndex+=1
         next
       end
+      next
     end
 
     #Check caps
@@ -71,9 +72,24 @@ filenames.each do |filename|
     caps = 1 if word == word.upcase && word =~ /[a-zA-Z]/
     word.upcase!
     wordIDrest = wordID[word]
-    sqlStatementInsert.execute docID, wordIDrest, getnHits(docID, wordIDrest), Hits.newHit(caps, 0, count+=1)
+    next if wordIDrest == NIL
+    rows.push(Row.new(docID, wordIDrest, 0, Hits.newHit(caps, 0, count+=1)))
   end
 end
 
-close sqlStatementInsert
-close $connection
+
+#Calculate nhits
+nhits = Hash.new 0
+rows.each do |row|
+  nhits[row.docID.to_s + row.wordID.to_s] += 1
+end
+
+rows.each do |row|
+  row.nHits = nhits[row.docID.to_s + row.wordID.to_s]
+end
+
+#Push to database
+
+rows.each do |row|
+  sqlStatementInsert.execute(row.docID, row.wordID, row.nHits, row.hit)
+end
