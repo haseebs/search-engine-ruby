@@ -1,9 +1,9 @@
 require './hits'
 require 'mysql'
+require './GenSQL'
 
 # Parameters = host, username, password, database name
 $connection = Mysql.new 'localhost', 'test', '12345', 'wikiDatabase'
-sqlStatementInsert = $connection.prepare 'INSERT INTO forwardIndex(docID, wordID, nHits, hit) VALUES(?,?,?,?)'
 
 sqlStatementGetWordID = $connection.query "SELECT * FROM Lexicon"
 wordID = {}
@@ -17,11 +17,17 @@ rows = []
 
 #Also read from forwardIndex and store in this struct for when extending
 
-folder = File.expand_path("..", Dir.pwd) + '/smallrepo/'
-filenames = Dir.glob(folder+ '**')
+folder = File.expand_path("..", Dir.pwd) + '/repository/'
+reservedFiles = [folder+'forwardIndexWithData.sql']
 
+totalFiles = %x[ls -l #{folder} | egrep -c '^-']
+fileCounter = 0
+
+filenames = Dir.glob(folder+ '**')
+filenames -= reservedFiles
 filenames.each do |filename|
 
+  puts "Indexing file: #{fileCounter+=1}/#{totalFiles}"
   #Get text
   text = File.open(filename, 'r').read.to_s
   #Get title
@@ -38,7 +44,7 @@ filenames.each do |filename|
   #Push title as fancy hit
   title.each do |word|
     word.upcase!
-    rows.push(Row.new(docID, wordID[word], 0, Hits.newHit(0,2,0)))
+    rows.push(Row.new(docID, wordID[word], 0, Hits.newHit(0,2,0))) if wordID != NIL
   end
 
   count = 0
@@ -50,7 +56,7 @@ filenames.each do |filename|
       if boldWords[boldWordsIndex].class == String
         boldWords[boldWordsIndex].upcase!
         wordIDbold = wordID[boldWords[boldWordsIndex]]
-        rows.push(Row.new(docID, wordIDbold, 0, Hits.newHit(0,1,count+=1)))
+        rows.push(Row.new(docID, wordIDbold, 0, Hits.newHit(0,1,count+=1))) if wordIDbold != NIL
         boldWordsIndex+=1
         next
       end
@@ -59,7 +65,7 @@ filenames.each do |filename|
         boldWords[boldWordsIndex].each do |boldWord|
           boldWord.upcase!
           wordIDbold = wordID[boldWord]
-          rows.push(Row.new(docID, wordIDbold, 0, Hits.newHit(0,1,count+=1)))
+          rows.push(Row.new(docID, wordIDbold, 0, Hits.newHit(0,1,count+=1))) if wordIDbold != NIL
         end
         boldWordsIndex+=1
         next
@@ -89,7 +95,11 @@ rows.each do |row|
 end
 
 #Push to database
-
-rows.each do |row|
-  sqlStatementInsert.execute(row.docID, row.wordID, row.nHits, row.hit)
-end
+#This method below works but it is very slow (81 hours) on my computer
+#sqlStatementInsert = $connection.prepare 'INSERT INTO forwardIndex(docID, wordID, nHits, hit) VALUES(?,?,?,?)'
+#rows.each do |row|
+#  sqlStatementInsert.execute(row.docID, row.wordID, row.nHits, row.hit)
+#end
+#
+#So instead we generate our own sql file which then can be executed for quicker insertion
+GenSQL.generate(rows, reservedFiles[0])
