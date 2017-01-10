@@ -3,3 +3,5 @@ CREATE TABLE docRefs (
   title varchar(250),
   wordCount INT
 );
+
+CREATE INDEX title_index ON docRefs(title);

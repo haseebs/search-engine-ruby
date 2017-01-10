@@ -17,7 +17,8 @@ module Hits
     end
 
     #Will return 3 values
-    def extractHit(hit)
+    def extractHit(ahit)
+      hit = ahit.to_i
       cap = (hit & CAP_MASK) >> 15
       imp = (hit & IMP_MASK) >> 13
       pos = (hit & POS_MASK)

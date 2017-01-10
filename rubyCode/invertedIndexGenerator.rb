@@ -12,8 +12,6 @@ connection = Mysql.new 'localhost', 'test', '12345', 'wikiDatabase'
 
 #Get data from forward Index and load it into memory and then
 #fill it in our newly created data structure
-#This will be further optimized in the future to take less memory
-#but for a small dataset, this method is generally faster
 
 #rowLimit = 5000
 wordID = 0;
