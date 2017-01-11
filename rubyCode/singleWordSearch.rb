@@ -6,7 +6,7 @@ require './hits.rb'
 connection = Mysql.new 'localhost', 'test', '12345', 'wikiDatabase'
 
 # [title, capitalization, bold, plain]
-typeWeight = Vector[20, 10, 8, 1]
+TYPE_WEIGHT = Vector[20, 10, 8, 1]
 
 puts 'Enter a search term'
 word = gets.chomp
@@ -47,17 +47,16 @@ end
 
 #Dot product with Typeweight vector
 typeCounts.each do |id, vec|
-  irScore << IR.new(id, typeWeight.inner_product(vec))
+  irScore << IR.new(id, TYPE_WEIGHT.inner_product(vec))
 end
 
 #Sort is inefficient, needs to be optimized
 sortedScores = irScore.sort_by { |a| a[:ir] }.reverse[0..1000]
-
+#
 #To make this portion more efficient, load docRefs into RAM at
 #the start of program, its about only 100mb
 sortedScores.each do |doc|
   print doc
   puts connection.query("SELECT title from docRefs where docID = '#{doc.docID}' LIMIT 1;").fetch_row
 end
-
 
