@@ -1,62 +1,64 @@
 require 'matrix'
 require 'mysql'
 require './hits.rb'
+module SingleWordSearch
+  class << self
+    # [title, capitalization, bold, plain]
+    TYPE_WEIGHT = Vector[20, 10, 8, 1]
+    Hit = Struct.new(:docID, :hit)
+    IR = Struct.new(:docID, :ir)
+    def search(words)
 
-#Parameters = host, user, password, databasename
-connection = Mysql.new 'localhost', 'test', '12345', 'wikiDatabase'
+      word = words[0]
+      #Parameters = host, user, password, databasename
+      connection = Mysql.new 'localhost', 'test', '12345', 'wikiDatabase'
 
-# [title, capitalization, bold, plain]
-TYPE_WEIGHT = Vector[20, 10, 8, 1]
+      docresp = connection.query("SELECT docID, hit from invertedIndex where wordID = ( SELECT wordID from Lexicon where word = '#{word}' LIMIT 1 );")
+      hits = []
+      docresp.num_rows.times do
+        row = docresp.fetch_row
+        hits << Hit.new(row[0], row[1])
+      end
 
-puts 'Enter a search term'
-word = gets.chomp
-word.downcase!
+      #TypeCount = Struct.new(:docID, :vector)
+      typeCounts = {}
 
-docresp = connection.query("SELECT docID, hit from invertedIndex where wordID = ( SELECT wordID from Lexicon where word = '#{word}' LIMIT 1 );")
-hits = []
-Hit = Struct.new(:docID, :hit)
+      irScore = []
 
-docresp.num_rows.times do
-  row = docresp.fetch_row
-  hits << Hit.new(row[0], row[1])
-end
+      hits.each do |doc|
+        cap, imp, pos = Hits.extractHit(doc.hit)
 
-#TypeCount = Struct.new(:docID, :vector)
-typeCounts = {}
+        title = 0
+        bold = 0
+        plain = 0
 
-IR = Struct.new(:docID, :ir)
-irScore = []
+        title = 1 if imp == 2
+        bold = 1 if imp == 1
+        plain = 1 if imp == 0
 
-hits.each do |doc|
-  cap, imp, pos = Hits.extractHit(doc.hit)
+        if typeCounts[doc.docID].nil?
+          typeCounts[doc.docID] = Vector[title, cap, bold, plain] #= TypeCount.new(doc.docID, Vector[title, cap, bold, plain])
+          next
+        end
+        typeCounts[doc.docID] += Vector[title, cap, bold, plain]
+      end
 
-  title = 0
-  bold = 0
-  plain = 0
+      #Dot product with Typeweight vector
+      typeCounts.each do |id, vec|
+        irScore << IR.new(id, TYPE_WEIGHT.inner_product(vec))
+      end
 
-  title = 1 if imp == 2
-  bold = 1 if imp == 1
-  plain = 1 if imp == 0
-
-  if typeCounts[doc.docID].nil?
-    typeCounts[doc.docID] = Vector[title, cap, bold, plain] #= TypeCount.new(doc.docID, Vector[title, cap, bold, plain])
-    next
+      #Sort is inefficient, needs to be optimized
+      sortedScores = irScore.sort_by { |a| a[:ir] }.reverse[0..100]
+      #To make this portion more efficient, load docRefs into RAM at
+      #the start of program, its about only 100mb
+      filenames = []
+      sortedScores.each do |doc|
+        name = connection.query("SELECT title, wordCount from docRefs where docID = '#{doc.docID}' LIMIT 1;").fetch_row
+        filenames << [doc.docID, name[0], name[1]].join('-')
+      end
+      #puts filenames
+      return filenames
+    end
   end
-  typeCounts[doc.docID] += Vector[title, cap, bold, plain]
 end
-
-#Dot product with Typeweight vector
-typeCounts.each do |id, vec|
-  irScore << IR.new(id, TYPE_WEIGHT.inner_product(vec))
-end
-
-#Sort is inefficient, needs to be optimized
-sortedScores = irScore.sort_by { |a| a[:ir] }.reverse[0..1000]
-#
-#To make this portion more efficient, load docRefs into RAM at
-#the start of program, its about only 100mb
-sortedScores.each do |doc|
-  print doc
-  puts connection.query("SELECT title from docRefs where docID = '#{doc.docID}' LIMIT 1;").fetch_row
-end
-
