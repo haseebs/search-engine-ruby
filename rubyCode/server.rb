@@ -1,27 +1,25 @@
 require 'rubygems'
 require 'sinatra'
+require './search.rb'
 
 get '/' do
   erb :home_page
 end
 
-
 post '/home_page' do
- array=params[:query]
+  words=params[:query]
+  search = Search.new
+  @array = search.query(words)
 
-   @array=function
-   erb :display
-
- end
-
-get '/result?*' do
-   file=request.fullpath.to_s.match(/\?(.*)/)[1]
- File.read(file)
+  if @array.nil?
+    'Please Be more specific'
+  else
+    erb :display
+  end
 end
 
-
-
-
-def function
-return ['Pakistan','Database',]
+get '/result?*' do
+  file=request.fullpath.to_s.match(/\?(.*)/)[1]
+  #File.read(File.expand_path("..", Dir.pwd)+ '/repository/' + file)
+  File.read(File.expand_path("..",File.expand_path("..", Dir.pwd))+ '/repository/' + file)
 end
