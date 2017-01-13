@@ -1,0 +1,66 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu" rel="stylesheet"> 
+
+
+
+
+h1{
+color:#989595;
+font-size: 100px;
+font-family: Ubuntu, sans-serif;
+
+}
+input[type=text]
+{
+margin-top:-10em;
+ border: 1px solid #ccc;
+ padding: 12px 20px;
+  
+}
+.search{
+ position:fixed;
+    top: 50%;
+    left: 50%;
+    width:30em;
+    height:18em;
+    margin-top: -13em; 
+    margin-left: -15em;
+    
+ }
+ .button{
+font-family: Ubuntu, sans-serif;
+ border-radius:2px;
+   width:150px;
+   font-size: 17px;
+  cursor: pointer;
+  text-align: center;
+  margin-top:7px;
+  margin-left:220px;
+
+ }
+ 
+ 
+ 
+
+</style>
+</head>
+<body>
+ <div class="search"> 
+
+<h1 style="font-family: Ubuntu, sans-serif;">WikiHunt</h1>
+
+<form action="/home_page" method="post">
+ <input type="text" class="input-lg" size=90 placeholder="Search" name="query"  required>
+  <!--<button type="button"  class="searchbtn">Search</button>-->
+  <input type="submit" class="button" value="Search">
+  </form>
+  </div>
+  
+
+</body>
+</html>
