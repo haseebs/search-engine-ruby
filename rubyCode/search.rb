@@ -9,11 +9,9 @@ class Search
   def query(word)
     words = word.chomp.downcase.split
     words -= BLACKLIST
-    return if words.count == 0
-    SingleWordSearch.search(words) if words.count == 1
-    MultiWordSearch.search(words) if words.count > 1
+    return nil if words.count == 0
+    return SingleWordSearch.search(words) if words.count == 1
+    return MultiWordSearch.search(words) if words.count > 1
   end
 end
 
-search = Search.new
-search.query("rails")
