@@ -21,5 +21,7 @@ end
 get '/result?*' do
   file=request.fullpath.to_s.match(/\?(.*)/)[1]
   #File.read(File.expand_path("..", Dir.pwd)+ '/repository/' + file)
-  File.read(File.expand_path("..",File.expand_path("..", Dir.pwd))+ '/repository/' + file)
+  @file = File.read(File.expand_path("..",File.expand_path("..", Dir.pwd))+ '/repository/' + file)
+  #@file = @file.gsub(/[^\w\s]/, " ")
+  erb :content
 end
