@@ -1,4 +1,5 @@
 # Simple Wikipedia Search Engine
+This documentation is incomplete.
 
 ## Recommended OS:
 Any Linux distribution for entire functionality
