@@ -22,4 +22,4 @@ We used the file simplewiki-20161220-pages-meta-current.xml
 
 * Ruby and MySQL must be set up in the system prior to executing the code.
 
-* The repository folder shall be filled while execution.
+* The server is written in sinatra
