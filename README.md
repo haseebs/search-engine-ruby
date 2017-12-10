@@ -1,6 +1,5 @@
 # Simple Wikipedia Search Engine
-This documentation is incomplete.
-
+This repo contains the implementation of [The Anatomy of a Large-Scale Hypertextual Web Search Engine](http://infolab.stanford.edu/~backrub/google.html) written in Ruby and MySQL
 ## Recommended OS:
 Any Linux distribution for entire functionality
 
