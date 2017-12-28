@@ -1,5 +1,5 @@
 # Simple Wikipedia Search Engine
-This implementation of a search engine similar to [The Anatomy of a Large-Scale Hypertextual Web Search Engine](http://infolab.stanford.edu/~backrub/google.html) written in Ruby and MySQL
+WikiHunt is made as a search engine for [Simple Wikipedia](https://simple.wikipedia.org/wiki/Main_Page) similar to [The Anatomy of a Large-Scale Hypertextual Web Search Engine](http://infolab.stanford.edu/~backrub/google.html) written in Ruby and MySQL
 ## Recommended OS:
 Preferrably Ubuntu 16.04 or any other compatible debian based distro.
 
@@ -20,24 +20,15 @@ A bash script for executing all these files is not provided as there a various d
 
 ## Notes
 * It is recommended to use Linux based OS because some functionality is OS dependent.
-
 * Ruby and MySQL must be set up in the system prior to executing the code.
-
 * The server is written in sinatra
-
 * Inverted Index is indexed by wordID to ensure quick retrieval. However
 this index can be dropped and created again when inserting large amounts of 
 data to ensure quick insertion.
-
 * The creation of Forward Index for entire simple wikipedia took 26 minutes and < 1gb of ram (screenshot of profiler in folder)
 This can be further optimized. However forward indexing is a one-time process, unless the dataset is expanded.
 
-## Description
-WikiHunt is made as a search engine for [Simple
-Wikipedia](https://simple.wikipedia.org/wiki/Main_Page). The entirety of
-this wikipedia was downloaded from the data dumps in XML format, which
-was then parsed using Nokogiri gem.
-
+## Detailed Description
 ### Parsing
 The data was obtained in form of a single XML file in which each page is
 separated by <page> tag. This file is read by repositoryGenerator.rb
