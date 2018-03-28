@@ -2,7 +2,6 @@
 WikiHunt is made as a search engine for [Simple Wikipedia](https://simple.wikipedia.org/wiki/Main_Page) similar to [The Anatomy of a Large-Scale Hypertextual Web Search Engine](http://infolab.stanford.edu/~backrub/google.html) written in Ruby and MySQL.
 
 ## How to run
-A bash script for executing all these files is not provided as there a various different ways of setting up ruby, and the script may not work properly.
 1. Execute sqlCode/createUserAndDB.sql
 2. Execute the remaining .sql scripts in any order
 3. Execute rubyCode/repositoryGenerator.rb
